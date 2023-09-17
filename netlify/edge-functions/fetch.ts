@@ -37,6 +37,11 @@ export default async (request: Request) => {
 
     const json = await result.json();
 
+    if (
+      typeof json === "object" && !Array.isArray(json) &&
+      (("message" in json) || ("status_code" in json))
+    ) return fetchCached();
+
     redis.set(path, json);
     redis.set(pathAliveKey, true, {
       ex: FIVE_MINUTES_IN_SECONDS,
