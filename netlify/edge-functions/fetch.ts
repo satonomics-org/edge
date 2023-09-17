@@ -19,6 +19,7 @@ export default async (request: Request) => {
   const createJSONResponse = (data: unknown) =>
     Response.json(data, {
       headers: {
+        "Access-Control-Allow-Origin": "https://satonomics.xyz",
         "cache-control": `public, s-maxage=${FIVE_MINUTES_IN_SECONDS}`,
       },
     });
