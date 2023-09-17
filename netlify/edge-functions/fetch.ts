@@ -37,8 +37,8 @@ export default async (request: Request) => {
 
     const json = await result.json();
 
-    await redis.set(path, json);
-    await redis.set(pathAliveKey, true, {
+    redis.set(path, json);
+    redis.set(pathAliveKey, true, {
       ex: FIVE_MINUTES_IN_SECONDS,
     });
 
