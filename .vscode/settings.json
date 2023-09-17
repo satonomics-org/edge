@@ -1,0 +1,11 @@
+{
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.unstable": true,
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "deno.enablePaths": [
+    "netlify/edge-functions"
+  ],
+  "deno.importMap": ".netlify/edge-functions-import-map.json"
+}

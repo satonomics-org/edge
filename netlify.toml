@@ -1,0 +1,6 @@
+[[edge_functions]]
+  path = "/fetch/*"
+  function = "fetch"
+
+[dev]
+  autoLaunch = false
