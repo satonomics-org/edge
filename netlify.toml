@@ -1,12 +1,2 @@
-[[edge_functions]]
-  cache = "manual"
-  path = "/fetch/*"
-  function = "fetch"
-
-[[edge_functions]]
-  cache = "manual"
-  path = "/hello"
-  function = "hello"
-
 [dev]
   autoLaunch = false

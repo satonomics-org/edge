@@ -1,5 +1,7 @@
 import { Redis } from "https://deno.land/x/upstash_redis/mod.ts";
 
+import type { Config, Context } from "https://edge.netlify.com";
+
 const FIVE_MINUTES_IN_SECONDS = 300;
 
 const createJSONResponse = (data: unknown) =>
@@ -60,4 +62,9 @@ export default async (request: Request) => {
   } catch {
     return fetchCached();
   }
+};
+
+export const config: Config = {
+  cache: "manual",
+  path: "/fetch/*",
 };
