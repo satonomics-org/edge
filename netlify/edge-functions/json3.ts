@@ -3,7 +3,7 @@ import type { Config, Context } from "https://edge.netlify.com";
 const FIVE_MINUTES_IN_SECONDS = 300;
 
 export default async (req: Request, context: Context) => {
-  console.log("run json2");
+  console.log("run json3");
 
   return Response.json({
     e: "f",
