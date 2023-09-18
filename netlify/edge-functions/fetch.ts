@@ -1,6 +1,6 @@
 import { Redis } from "https://deno.land/x/upstash_redis/mod.ts";
 
-import type { Config, Context } from "https://edge.netlify.com";
+import type { Config } from "https://edge.netlify.com";
 
 const FIVE_MINUTES_IN_SECONDS = 300;
 
