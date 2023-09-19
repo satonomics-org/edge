@@ -24,8 +24,11 @@ export default async (request: Request) => {
 
   const redis = new Redis(config);
 
-  const path = request.url.split("/").pop();
-  if (!path) return new Response("Missing path");
+  const path = new URL(request.url).pathname;
+
+  console.log("path", path);
+
+  if (!path || path === "/") return new Response("Missing path");
 
   const fetchCached = async () => {
     console.log(`fetch ${path} from upstash`);
@@ -66,5 +69,5 @@ export default async (request: Request) => {
 
 export const config: Config = {
   cache: "manual",
-  path: "/fetch/*",
+  path: "/*",
 };
