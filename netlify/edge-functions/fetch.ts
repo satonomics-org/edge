@@ -28,44 +28,88 @@ export default async (request: Request) => {
 
   const path = `${pathname}${search}`;
 
+  const canBeCached = pathname !== "/candlesticks";
+
   console.log("path", path);
+
+  const redisGetAlive = () => {
+    console.log("REDIS: GET: Alive");
+    return redis.get(pathAliveKey);
+  };
+
+  const redisGetLastKey = () => {
+    console.log("REDIS: GET: Last key");
+    return redis.get(pathLastKey);
+  };
+
+  const redisSetAlive = () => {
+    console.log("REDIS: SET: Alive");
+    redis.set(pathAliveKey, true, {
+      ex: FIVE_MINUTES_IN_SECONDS,
+    });
+  };
+
+  const redisSetAll = (
+    json: any,
+    lastKey: string | undefined,
+  ) => {
+    console.log(`REDIS: SET: Cache`);
+    redis.set(path, json);
+
+    console.log(`REDIS: SET: Last key`);
+    redis.set(pathLastKey, lastKey);
+
+    redisSetAlive();
+  };
 
   if (!path || path === "/") return new Response("Missing path");
 
   const fetchCached = async () => {
-    console.log(`fetch ${path} from upstash`);
+    console.log(`REDIS: GET: Cache`);
     return createJSONResponse(await redis.get(path));
   };
 
   const pathAliveKey = `${path}-alive`;
+  const pathLastKey = `${path}-last`;
 
-  if (await redis.get(pathAliveKey)) return fetchCached();
+  if (canBeCached && await redisGetAlive()) return fetchCached();
 
   const apiURL = `https://satonomics.shuttleapp.rs/${path}`;
 
   try {
-    console.log(`fetch ${path} from shuttle`);
+    console.log(`SHUTTLE: ${path}`);
 
     const result = await fetch(apiURL);
 
     const json = await result.json();
 
-    if (
-      typeof json === "object" && !Array.isArray(json) &&
-      (("message" in json) || ("status_code" in json))
-    ) {
-      console.log(`ERROR: shuttle issue`);
-      return fetchCached();
-    }
+    const lastKey = Object.keys(json).pop();
 
-    redis.set(path, json);
-    redis.set(pathAliveKey, true, {
-      ex: FIVE_MINUTES_IN_SECONDS,
-    });
+    if (canBeCached) {
+      if (await redisGetLastKey() === lastKey) {
+        console.log(`DATA: Old`);
+        redisSetAlive();
+        return createJSONResponse(json);
+      }
+
+      if (
+        typeof json === "object" && !Array.isArray(json) &&
+        (("message" in json) || ("status_code" in json))
+      ) {
+        console.log(`ERROR: Shuttle issue`);
+        return fetchCached();
+      }
+
+      redisSetAll(json, lastKey);
+    }
 
     return createJSONResponse(json);
   } catch {
-    return fetchCached();
+    if (canBeCached) {
+      return fetchCached();
+    }
+
+    return new Response("Candlesticks shuttle error");
   }
 };
 
