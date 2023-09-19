@@ -24,7 +24,9 @@ export default async (request: Request) => {
 
   const redis = new Redis(config);
 
-  const path = new URL(request.url).pathname;
+  const { pathname, search } = new URL(request.url);
+
+  const path = `${pathname}${search}`;
 
   console.log("path", path);
 
