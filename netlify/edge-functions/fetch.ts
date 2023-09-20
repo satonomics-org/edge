@@ -28,7 +28,11 @@ export default async (request: Request) => {
 
   const path = `${pathname}${search}`;
 
-  const canBeCached = pathname !== "/candlesticks";
+  if (path === "/favicon.ico") {
+    return new Response("Error got favicon");
+  }
+
+  const cacheFirst = pathname !== "/candlesticks";
 
   console.log("path", path);
 
@@ -43,7 +47,12 @@ export default async (request: Request) => {
   };
 
   const redisSetAlive = () => {
+    if (!cacheFirst) {
+      return;
+    }
+
     console.log("REDIS: SET: Alive");
+
     redis.set(pathAliveKey, true, {
       ex: FIVE_MINUTES_IN_SECONDS,
     });
@@ -72,7 +81,7 @@ export default async (request: Request) => {
   const pathAliveKey = `${path}-alive`;
   const pathLastKey = `${path}-last`;
 
-  if (canBeCached && await redisGetAlive()) return fetchCached();
+  if (cacheFirst && await redisGetAlive()) return fetchCached();
 
   const apiURL = `https://satonomics.shuttleapp.rs/${path}`;
 
@@ -83,33 +92,33 @@ export default async (request: Request) => {
 
     const json = await result.json();
 
-    const lastKey = Object.keys(json).pop();
+    const lastKey = Array.isArray(json)
+      ? (json.at(-1).date as string | undefined)
+      : Object.keys(json).pop();
 
-    if (canBeCached) {
-      if (await redisGetLastKey() === lastKey) {
-        console.log(`DATA: Old`);
-        redisSetAlive();
-        return createJSONResponse(json);
-      }
+    const redisLastKey = await redisGetLastKey();
 
-      if (
-        typeof json === "object" && !Array.isArray(json) &&
-        (("message" in json) || ("status_code" in json))
-      ) {
-        console.log(`ERROR: Shuttle issue`);
-        return fetchCached();
-      }
+    if (redisLastKey === lastKey) {
+      console.log(`REDIS: Already saved`);
 
-      redisSetAll(json, lastKey);
+      redisSetAlive();
+
+      return createJSONResponse(json);
     }
 
-    return createJSONResponse(json);
-  } catch {
-    if (canBeCached) {
+    if (
+      typeof json === "object" && !Array.isArray(json) &&
+      (("message" in json) || ("status_code" in json))
+    ) {
+      console.log(`ERROR: Shuttle issue`);
       return fetchCached();
     }
 
-    return new Response("Candlesticks shuttle error");
+    redisSetAll(json, lastKey);
+
+    return createJSONResponse(json);
+  } catch {
+    return fetchCached();
   }
 };
 
